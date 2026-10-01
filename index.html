@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Avaliação - Casal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        orange: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        .smooth-transition { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <img src="https://raw.githubusercontent.com/G30IA/calendarg30/7d28818d56a083747954bcda3210caabfe50a08f/logog30.png" alt="G30 Logo" class="h-10 object-contain">
+                    <span class="font-bold text-xl tracking-tight hidden sm:block">Plan<span class="text-orange-500">Casal</span> Dashboard</span>
+                </div>
+                <div>
+                    <button onclick="calculateResults()" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md shadow-orange-500/30 smooth-transition flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> Analisar Desempenho
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Formulário de Notas (Lado Esquerdo) -->
+            <div class="lg:col-span-5 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-1">Avaliação de Rotinas</h2>
+                    <p class="text-sm text-slate-500">Atribua uma nota de 0 a 10 para cada rotina da vida do casal.</p>
+                </div>
+
+                <!-- Campo Nome da Loja -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <label for="store-name" class="block text-sm font-bold text-slate-700 mb-2">
+                        <i class="fa-solid fa-heart text-orange-500 mr-1"></i> Nome do Casal
+                    </label>
+                    <input type="text" id="store-name" placeholder="Ex: João e Maria" 
+                        class="block w-full rounded-lg border-slate-300 py-2.5 px-3 text-slate-900 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm border outline-none transition-all">
+                </div>
+
+                <div id="form-container" class="space-y-6 max-h-[65vh] overflow-y-auto pr-2 pb-10 custom-scrollbar">
+                    <!-- Os pilares e inputs serão renderizados aqui pelo JS -->
+                </div>
+            </div>
+
+            <!-- Resultados (Lado Direito) -->
+            <div class="lg:col-span-7">
+                <div class="sticky top-24 space-y-6">
+                    
+                    <!-- Resumo das Médias -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-ranking-star text-orange-500"></i> Médias por Pilar
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="averages-container">
+                            <div class="text-center p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-400">
+                                Aguardando análise...
+                            </div>
+                        </div>
+                        <div class="mt-8 relative h-60 w-full hidden smooth-transition" id="chart-container">
+                            <canvas id="averagesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Plano de Ação (Pilar Crítico) -->
+                    <div id="action-plan-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hidden smooth-transition">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <div class="bg-red-100 text-red-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Foco Prioritário: <span id="critical-pillar-name" class="text-red-600"></span></h3>
+                                <p class="text-sm text-slate-500">Este pilar obteve a menor média. Veja o passo a passo para as 3 rotinas mais críticas.</p>
+                            </div>
+                        </div>
+
+                        <div id="routines-action-list" class="space-y-6">
+                            <!-- Rotinas críticas renderizadas via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Resumo para Copiar -->
+                    <div id="summary-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hidden smooth-transition">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
+                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-file-lines text-orange-500"></i> Resumo para Copiar
+                            </h3>
+                            <button onclick="copySummary()" id="copy-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-4 rounded-lg text-sm transition-colors flex items-center gap-2">
+                                <i class="fa-regular fa-copy"></i> Copiar Texto
+                            </button>
+                        </div>
+                        <textarea id="summary-text" class="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-orange-500" readonly></textarea>
+                    </div>
+
+                    <!-- Placeholder de Estado Inicial -->
+                    <div id="initial-state" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+                        <div class="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa-solid fa-clipboard-check text-4xl text-orange-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700 mb-2">Pronto para a Avaliação</h3>
+                        <p class="text-slate-500 max-w-md">Preencha as notas no painel ao lado e clique em "Analisar Desempenho" para gerar seu plano de ação focado no que mais importa.</p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const data = [
+            {
+                id: "projetos",
+                title: "Projetos, Crescimento e Futuro",
+                icon: "fa-rocket",
+                routines: [
+                    {
+                        name: "Planejamento de Metas e Visão de Futuro",
+                        steps: [
+                            "Listar sonhos em conjunto (1 ano, 5 anos e 10 anos).",
+                            "Criar um quadro de visualização ou documento compartilhado com as metas.",
+                            "Revisar e ajustar essas metas a cada 6 meses para garantir alinhamento."
+                        ]
+                    },
+                    {
+                        name: "Desenvolvimento Profissional e Intelectual",
+                        steps: [
+                            "Conversar mensalmente sobre os desafios e próximos passos na carreira de ambos.",
+                            "Definir como um pode ajudar o outro a ter tempo para estudar/trabalhar em projetos extras.",
+                            "Comemorar as pequenas vitórias profissionais de cada um."
+                        ]
+                    },
+                    {
+                        name: "Planejamento de Viagens e Grandes Experiências",
+                        steps: [
+                            "Definir o destino e o objetivo da viagem principal do ano.",
+                            "Criar um cronograma de pesquisa (passagens, hospedagem, roteiro).",
+                            "Avaliar e programar viagens curtas (fins de semana) a cada trimestre."
+                        ]
+                    },
+                    {
+                        name: "Projetos de Família e Expansão",
+                        steps: [
+                            "Ter conversas transparentes sobre o desejo e o timing para ter filhos (ou adotar pets).",
+                            "Levantar as necessidades estruturais e financeiras para essas mudanças.",
+                            "Dividir responsabilidades em relação aos cuidados de dependentes atuais (se houver)."
+                        ]
+                    },
+                    {
+                        name: "Reunião Mensal de Alinhamento (Check-in de Vida)",
+                        steps: [
+                            "Marcar um dia fixo no mês (ex: dia 05) para uma reunião do casal.",
+                            "Pautar o que funcionou no mês anterior e o que precisa melhorar.",
+                            "Definir as prioridades e focos do casal para o próximo mês."
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "operacional",
+                title: "Casa, Saúde e Rotina",
+                icon: "fa-house-chimney",
+                routines: [
+                    {
+                        name: "Divisão e Manutenção das Tarefas Domésticas",
+                        steps: [
+                            "Mapear todas as tarefas da casa (limpeza, mercado, lixo, roupas).",
+                            "Distribuir as responsabilidades de forma justa, considerando a carga de trabalho de cada um.",
+                            "Estabelecer dias fixos para faxina pesada ou contratar ajuda terceirizada (diarista)."
+                        ]
+                    },
+                    {
+                        name: "Logística da Semana e Alimentação",
+                        steps: [
+                            "Definir o cardápio da semana (ou quinzena) para evitar o estresse do 'o que vamos comer?'.",
+                            "Fazer a lista de mercado de forma colaborativa e definir quem fará as compras.",
+                            "Estabelecer rotinas de 'meal prep' (deixar marmitas prontas) se a rotina for corrida."
+                        ]
+                    },
+                    {
+                        name: "Saúde Física e Bem-Estar",
+                        steps: [
+                            "Definir rotinas de atividade física (juntos ou separados, mas garantindo que aconteça).",
+                            "Agendar check-ups médicos e odontológicos anuais para ambos.",
+                            "Respeitar o horário de sono um do outro, criando um ambiente propício para descanso."
+                        ]
+                    },
+                    {
+                        name: "Manutenção e Melhorias do Lar",
+                        steps: [
+                            "Criar uma lista de coisas para consertar (lâmpadas, vazamentos, pintura).",
+                            "Definir prazos e responsáveis por chamar técnicos ou fazer o conserto.",
+                            "Planejar compras de móveis, decoração ou eletrodomésticos para melhorar o conforto."
+                        ]
+                    },
+                    {
+                        name: "Gestão de Imprevistos e Logística Externa",
+                        steps: [
+                            "Definir quem é o responsável por levar carros à revisão, pagar IPVA, etc.",
+                            "Estabelecer um plano de ação rápido para emergências (quem busca as crianças, quem falta ao trabalho se alguém adoecer).",
+                            "Manter documentos importantes (passaportes, exames, contratos) organizados e acessíveis para ambos."
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "conexao",
+                title: "Conexão, Intimidade e Social",
+                icon: "fa-heart",
+                routines: [
+                    {
+                        name: "Tempo de Qualidade e Date Night",
+                        steps: [
+                            "Bloquear na agenda um dia da semana (ou quinzena) exclusivamente para o casal.",
+                            "Alternar a responsabilidade de planejar o Date Night (cada vez um surpreende o outro).",
+                            "Estabelecer a regra de Zero Telas/Celulares durante esse momento de qualidade."
+                        ]
+                    },
+                    {
+                        name: "Comunicação e Resolução de Conflitos",
+                        steps: [
+                            "Estabelecer a regra de não dormir brigados ou de pedir 'tempo técnico' antes de estourar.",
+                            "Praticar a escuta ativa: ouvir para entender, não apenas para responder.",
+                            "Expressar necessidades de forma clara (ex: 'Sinto falta de X', em vez de 'Você nunca faz X')."
+                        ]
+                    },
+                    {
+                        name: "Intimidade e Conexão Física",
+                        steps: [
+                            "Conversar abertamente sobre desejos, fantasias e níveis de satisfação sexual.",
+                            "Manter rituais diários de afeto não-sexual (beijo de bom dia, abraço longo ao chegar em casa).",
+                            "Criar momentos e ambientes propícios para a intimidade sem que precise ser sempre agendado."
+                        ]
+                    },
+                    {
+                        name: "Rituais Diários e Surpresas",
+                        steps: [
+                            "Descobrir e aplicar a linguagem de amor principal do parceiro(a).",
+                            "Fazer pequenas surpresas mensais (um bilhete, comprar o chocolate favorito, preparar um café).",
+                            "Ter rituais só de vocês (ex: assistir a uma série específica juntos no domingo, tomar café juntos)."
+                        ]
+                    },
+                    {
+                        name: "Vida Social, Amigos e Família",
+                        steps: [
+                            "Alinhar a frequência de visitas às famílias de origem e definir limites saudáveis.",
+                            "Planejar encontros e recepções com amigos em comum.",
+                            "Respeitar e incentivar o tempo individual de cada um com seus próprios amigos."
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "financas",
+                title: "Finanças e Patrimônio",
+                icon: "fa-piggy-bank",
+                routines: [
+                    {
+                        name: "Orçamento Mensal e Controle de Gastos",
+                        steps: [
+                            "Preencher juntos a planilha financeira ou aplicativo de controle na 1ª semana do mês.",
+                            "Definir um teto de gastos para lazer, mercado, delivery e compras pessoais.",
+                            "Avaliar os gastos do mês anterior e cortar desperdícios ou assinaturas não utilizadas."
+                        ]
+                    },
+                    {
+                        name: "Gestão das Contas Fixas e Pagamentos",
+                        steps: [
+                            "Definir o modelo financeiro do casal (tudo junto, contas proporcionais ao salário, ou divisão 50/50).",
+                            "Centralizar as contas de consumo em débito automático ou concentrar pagamentos em um único responsável.",
+                            "Manter um calendário de tributos anuais (IPTU, IPVA, Seguros) para não serem pegos de surpresa."
+                        ]
+                    },
+                    {
+                        name: "Construção de Reservas e Investimentos",
+                        steps: [
+                            "Criar e manter uma Reserva de Emergência equivalente a 6 meses do custo de vida do casal.",
+                            "Definir um valor fixo (ou percentual da renda) para investir todo mês antes de gastar com outras coisas.",
+                            "Alinhar o perfil de investidor do casal e onde o dinheiro será alocado (Renda Fixa, Ações, Imóveis)."
+                        ]
+                    },
+                    {
+                        name: "Planejamento de Grandes Compras",
+                        steps: [
+                            "Fazer cotações e orçamentos conjuntos antes de trocar de carro, reformar a casa ou comprar móveis caros.",
+                            "Evitar financiamentos e parcelamentos longos, priorizando juntar o dinheiro para comprar à vista com desconto.",
+                            "Criar 'caixinhas' ou poupanças separadas para cada grande objetivo (Caixinha da Viagem, Caixinha do Carro)."
+                        ]
+                    },
+                    {
+                        name: "Alinhamento de Mentalidade Financeira",
+                        steps: [
+                            "Ter uma reunião financeira mensal com vinho/café para que o assunto seja leve, não um interrogatório.",
+                            "Definir um limite de gasto sem aviso (ex: compras acima de R$ 300 precisam ser conversadas antes).",
+                            "Respeitar a individualidade financeira: garantir que cada um tenha um valor mensal livre para gastar como quiser, sem dar satisfações."
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const scores = {};
+        let averagesChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const formContainer = document.getElementById('form-container');
+            
+            data.forEach((pillar) => {
+                scores[pillar.id] = {};
+
+                const pillarCard = document.createElement('div');
+                pillarCard.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden';
+                
+                const pillarHeader = document.createElement('div');
+                pillarHeader.className = 'bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3';
+                pillarHeader.innerHTML = `
+                    <div class="bg-orange-100 text-orange-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid ${pillar.icon}"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">${pillar.title}</h3>
+                `;
+                pillarCard.appendChild(pillarHeader);
+
+                const routinesDiv = document.createElement('div');
+                routinesDiv.className = 'divide-y divide-slate-100';
+                
+                pillar.routines.forEach((routine, index) => {
+                    const rId = `${pillar.id}_${index}`;
+                    scores[pillar.id][rId] = { name: routine.name, prevScore: 0, currScore: 0, steps: routine.steps };
+
+                    const row = document.createElement('div');
+                    row.className = 'px-6 py-4 flex items-center justify-between hover:bg-slate-50 smooth-transition gap-4';
+                    
+                    row.innerHTML = `
+                        <div class="pr-2 flex-1">
+                            <label class="block text-sm font-semibold text-slate-700 leading-tight mb-1">
+                                ${routine.name}
+                            </label>
+                        </div>
+                        <div class="flex gap-3 items-center">
+                            <div class="w-20 text-center">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Anterior</span>
+                                <input type="number" id="${rId}_prev" min="0" max="10" placeholder="0"
+                                    onchange="updateScore('${pillar.id}', '${rId}', 'prev', this.value)"
+                                    class="block w-full rounded-lg border-slate-200 py-1.5 px-2 text-center text-slate-500 shadow-sm focus:border-slate-400 sm:text-base border bg-slate-50 outline-none transition-all">
+                            </div>
+                            <div class="w-24 text-center">
+                                <span class="text-[10px] uppercase font-bold text-orange-500 block mb-1">Atual</span>
+                                <input type="number" id="${rId}_curr" min="0" max="10" placeholder="0"
+                                    onchange="updateScore('${pillar.id}', '${rId}', 'curr', this.value)"
+                                    class="block w-full rounded-lg border-orange-200 py-1.5 px-2 text-center text-slate-900 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-lg font-bold border bg-white outline-none transition-all">
+                            </div>
+                        </div>
+                    `;
+                    routinesDiv.appendChild(row);
+                });
+
+                pillarCard.appendChild(routinesDiv);
+                formContainer.appendChild(pillarCard);
+            });
+        });
+
+        function updateScore(pillarId, routineId, type, value) {
+            let num = parseFloat(value);
+            if (isNaN(num) || num < 0) num = 0;
+            if (num > 10) num = 10;
+            
+            document.getElementById(`${routineId}_${type}`).value = num;
+            
+            if (type === 'prev') {
+                scores[pillarId][routineId].prevScore = num;
+            } else {
+                scores[pillarId][routineId].currScore = num;
+            }
+        }
+
+        function calculateResults() {
+            const chartLabels = [];
+            const chartDataPrev = [];
+            const chartDataCurr = [];
+            const chartColorsCurr = [];
+
+            let lowestPillar = null;
+            let lowestAvg = Infinity;
+            
+            let totalPrevSum = 0;
+            let totalCurrSum = 0;
+            let totalCount = 0;
+
+            let storeName = document.getElementById('store-name').value.trim();
+            let storeTitle = storeName ? ` - ${storeName.toUpperCase()}` : '';
+
+            const averagesContainer = document.getElementById('averages-container');
+            averagesContainer.innerHTML = '';
+
+            data.forEach(pillar => {
+                let sumPrev = 0;
+                let sumCurr = 0;
+                let count = 0;
+                const routinesArray = [];
+
+                for (const key in scores[pillar.id]) {
+                    sumPrev += scores[pillar.id][key].prevScore;
+                    sumCurr += scores[pillar.id][key].currScore;
+                    count++;
+                    routinesArray.push(scores[pillar.id][key]);
+                }
+                
+                totalPrevSum += sumPrev;
+                totalCurrSum += sumCurr;
+                totalCount += count;
+
+                const avgPrev = count > 0 ? (sumPrev / count) : 0;
+                const avgCurr = count > 0 ? (sumCurr / count) : 0;
+                
+                chartLabels.push(pillar.title);
+                chartDataPrev.push(avgPrev.toFixed(1));
+                chartDataCurr.push(avgCurr.toFixed(1));
+                
+                chartColorsCurr.push(avgCurr < 5 ? '#ef4444' : '#f97316');
+                
+                if (avgCurr < lowestAvg) {
+                    lowestAvg = avgCurr;
+                    lowestPillar = {
+                        id: pillar.id,
+                        title: pillar.title,
+                        routines: routinesArray
+                    };
+                }
+                
+                let diffStr = '';
+                let diffColor = 'text-slate-400';
+                let diffIcon = 'fa-minus';
+
+                if (avgPrev === 0 && avgCurr > 0) {
+                    diffStr = '+100%'; diffColor = 'text-green-600'; diffIcon = 'fa-arrow-trend-up';
+                } else if (avgPrev === 0 && avgCurr === 0) {
+                    diffStr = '0%'; diffColor = 'text-slate-400'; diffIcon = 'fa-minus';
+                } else {
+                    const diff = ((avgCurr - avgPrev) / avgPrev) * 100;
+                    if (diff > 0) { diffStr = '+' + diff.toFixed(1) + '%'; diffColor = 'text-green-600'; diffIcon = 'fa-arrow-trend-up'; }
+                    else if (diff < 0) { diffStr = diff.toFixed(1) + '%'; diffColor = 'text-red-600'; diffIcon = 'fa-arrow-trend-down'; }
+                    else { diffStr = '0%'; diffColor = 'text-slate-400'; diffIcon = 'fa-minus'; }
+                }
+
+                averagesContainer.innerHTML += `
+                    <div class="text-center p-4 rounded-xl border ${avgCurr < 5 ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'} smooth-transition flex flex-col justify-center items-center relative">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">${pillar.title}</div>
+                        <div class="text-3xl font-black ${avgCurr < 5 ? 'text-red-600' : 'text-slate-800'} mb-1">${avgCurr.toFixed(1)}</div>
+                        <div class="text-[11px] font-semibold ${diffColor} bg-white px-2 py-0.5 rounded-full border border-slate-100 shadow-sm mt-1">
+                            <i class="fa-solid ${diffIcon}"></i> ${diffStr}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('initial-state').classList.add('hidden');
+            const actionPlan = document.getElementById('action-plan-container');
+            actionPlan.classList.remove('hidden');
+
+            const chartContainer = document.getElementById('chart-container');
+            chartContainer.classList.remove('hidden');
+
+            const ctx = document.getElementById('averagesChart').getContext('2d');
+            
+            if (averagesChart) {
+                averagesChart.destroy();
+            }
+            
+            averagesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: 'Média Anterior',
+                            data: chartDataPrev,
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 4,
+                            maxBarThickness: 40
+                        },
+                        {
+                            label: 'Média Atual',
+                            data: chartDataCurr,
+                            backgroundColor: chartColorsCurr,
+                            borderRadius: 4,
+                            maxBarThickness: 40
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            grid: {
+                                color: '#f1f5f9',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                stepSize: 2
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { family: 'Inter', font: { weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: { family: 'Inter', size: 14 },
+                            bodyFont: { family: 'Inter', size: 14 }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('critical-pillar-name').innerText = lowestPillar.title;
+
+            lowestPillar.routines.sort((a, b) => a.currScore - b.currScore);
+            
+            const worst3 = lowestPillar.routines.slice(0, 3);
+
+            const actionList = document.getElementById('routines-action-list');
+            actionList.innerHTML = '';
+
+            worst3.forEach((routine) => {
+                const stepsHTML = routine.steps.map(step => `
+                    <li class="flex items-start gap-2 text-sm text-slate-600 mb-2">
+                        <i class="fa-solid fa-circle-check text-orange-500 mt-1 flex-shrink-0 text-xs"></i>
+                        <span>${step}</span>
+                    </li>
+                `).join('');
+
+                actionList.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-bold text-slate-800 pr-4 leading-tight">${routine.name}</h4>
+                            <span class="bg-slate-200 text-slate-700 text-xs font-bold px-2 py-1 rounded-md border border-slate-300 whitespace-nowrap ml-2">Ant: ${routine.prevScore} | Atu: <span class="text-red-700">${routine.currScore}</span></span>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <h5 class="text-xs font-bold uppercase text-slate-500 tracking-wider mb-3">Passo a passo para melhoria:</h5>
+                            <ul class="ml-1">
+                                ${stepsHTML}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            });
+
+            let totalAvgPrev = totalCount > 0 ? (totalPrevSum / totalCount) : 0;
+            let totalAvgCurr = totalCount > 0 ? (totalCurrSum / totalCount) : 0;
+            
+            let totalDiffStr = '';
+            if (totalAvgPrev === 0 && totalAvgCurr > 0) totalDiffStr = '+100%';
+            else if (totalAvgPrev === 0 && totalAvgCurr === 0) totalDiffStr = '0%';
+            else {
+                const d = ((totalAvgCurr - totalAvgPrev) / totalAvgPrev) * 100;
+                totalDiffStr = `${d > 0 ? '+' : ''}${d.toFixed(1)}%`;
+            }
+
+            let summaryText = `📊 RESUMO DE DESEMPENHO - CASAL${storeTitle} 📊\n\n`;
+            summaryText += `📈 EVOLUÇÃO GERAL: Média Atual ${totalAvgCurr.toFixed(1)} (Antes: ${totalAvgPrev.toFixed(1)}) | Crescimento: ${totalDiffStr}\n\n`;
+            
+            summaryText += `--- MÉDIAS POR PILAR ---\n`;
+            data.forEach((pillar, idx) => {
+                let prev = parseFloat(chartDataPrev[idx]);
+                let curr = parseFloat(chartDataCurr[idx]);
+                let pDiffStr = '';
+                if(prev === 0 && curr > 0) pDiffStr = '+100%'; 
+                else if(prev === 0 && curr === 0) pDiffStr = '0%'; 
+                else pDiffStr = `${((curr - prev) / prev * 100) > 0 ? '+' : ''}${(((curr - prev) / prev) * 100).toFixed(1)}%`;
+                
+                summaryText += `${pillar.title}: ${curr.toFixed(1)} (Antes: ${prev.toFixed(1)}) | ${pDiffStr}\n`;
+            });
+
+            summaryText += `\n--- DETALHAMENTO DAS NOTAS ---\n`;
+            data.forEach(pillar => {
+                summaryText += `\n[${pillar.title.toUpperCase()}]\n`;
+                for (const key in scores[pillar.id]) {
+                    const r = scores[pillar.id][key];
+                    summaryText += `- ${r.name}:\n  Atual: ${r.currScore} | Anterior: ${r.prevScore}\n`;
+                }
+            });
+            
+            summaryText += `\n⚠️ FOCO PRIORITÁRIO: ${lowestPillar.title} (Média: ${lowestAvg.toFixed(1)})\n\n`;
+            summaryText += `--- PLANO DE AÇÃO (3 Piores Rotinas) ---\n\n`;
+            
+            worst3.forEach((routine, index) => {
+                summaryText += `${index + 1}. ${routine.name} (Atual: ${routine.currScore} | Anterior: ${routine.prevScore})\n`;
+                summaryText += `Passo a passo para melhoria:\n`;
+                routine.steps.forEach(step => {
+                    summaryText += `  * ${step}\n`;
+                });
+                summaryText += `\n`;
+            });
+
+            document.getElementById('summary-text').value = summaryText;
+            document.getElementById('summary-container').classList.remove('hidden');
+
+            if (window.innerWidth < 1024) {
+                actionPlan.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function copySummary() {
+            const summaryTextArea = document.getElementById('summary-text');
+            summaryTextArea.select();
+            summaryTextArea.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                
+                const btn = document.getElementById('copy-btn');
+                const originalHTML = '<i class="fa-regular fa-copy"></i> Copiar Texto';
+                
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                btn.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+                btn.classList.add('bg-green-100', 'text-green-700');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('bg-green-100', 'text-green-700');
+                    btn.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+                }, 2000);
+            } catch (err) {
+                console.error('Falha ao copiar o texto', err);
+            }
+            
+            window.getSelection().removeAllRanges();
+        }
+    </script>
+</body>
+</html>
